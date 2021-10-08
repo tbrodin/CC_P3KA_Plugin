@@ -1,0 +1,6 @@
+<RCC>
+  <qresource prefix="/CC/plugin/LoadP3KAPlugin" >
+    <file>images/icon.png</file>
+    <file>info.json</file>
+  </qresource>
+</RCC>
