@@ -2,22 +2,6 @@
 
 #include "LoadP3KAPlugin.h"
 
-#include "qdialog.h"
-#include "qfiledialog.h"
-#include "qlayout.h"
-#include "qformlayout.h" 
-#include "qpushbutton.h"
-#include "ccSphere.h"
-#include "qlineedit.h"
-#include "qlabel.h"
-#include "qdialogbuttonbox.h"
-#include "qstring.h"
-#include "qjsondocument.h"
-
-#include <sstream>
-#include <string>
-#include <fstream>
-
 // Default constructor:
 //	- pass the Qt resource path to the info.json file (from <yourPluginName>.qrc file) 
 //  - constructor should mainly be used to initialize actions and other members
@@ -36,17 +20,6 @@ void LoadP3KAPlugin::onNewSelection( const ccHObject::Container &selectedEntitie
 	{
 		return;
 	}
-	
-	// If you need to check for a specific type of object, you can use the methods
-	// in ccHObjectCaster.h or loop and check the objects' classIDs like this:
-	//
-	//	for ( ccHObject *object : selectedEntities )
-	//	{
-	//		if ( object->getClassID() == CC_TYPES::VIEWPORT_2D_OBJECT )
-	//		{
-	//			// ... do something with the viewports
-	//		}
-	//	}
 	
 }
 
@@ -71,6 +44,90 @@ QList<QAction *> LoadP3KAPlugin::getActions()
 	return { m_action };
 }
 
+
+void LoadP3KAPlugin::readP3KAResult(QString path)
+{
+	QFile myFile(path);
+	bool opened = myFile.open(QIODevice::ReadOnly);
+	if (!opened)
+	{
+		ccLog::Error(QStringLiteral("Could not load plugin resources: %1").arg(path));
+		return;
+	}
+	QByteArray json = myFile.readAll();
+	QJsonParseError	jsonError;
+	auto json_doc = QJsonDocument::fromJson(json, &jsonError);
+
+	if (jsonError.error != QJsonParseError::NoError)
+	{
+		ccLog::Error(QStringLiteral("Could not parse plugin info: %1").arg(jsonError.errorString()));
+		return;
+	}
+
+	if (!json_doc.isObject()) {
+		qDebug() << "JSON is not an object.";
+		exit(3);
+	}
+
+	QJsonObject rootObj = json_doc.object();
+	QString name,type,data;
+	QString camera_type = "Camera", point_type = "Point", plane_type = "Plane", point_uncert_type = "Point Uncertainty";
+
+	QStringList books = rootObj.keys();
+	for (auto book : books)
+	{
+		QJsonObject obj = rootObj.value(book).toObject();
+		QString keys;
+		name = obj.value("name").toString();
+		type = obj.value("type").toString();
+		data = obj.value("data").toString();
+		QStringList data_str = data.split(QRegExp("[\r\n]"));
+
+		if (type == camera_type)
+		{	
+			ccGLMatrix trans = ccGLMatrix();
+			ccCameraSensor* camera = new ccCameraSensor();
+			camera->setName(name);
+			//camera->apply // TODO: convert data to correct format and then transform camera
+			m_app->addToDB(camera);
+		} 
+		else if (type == point_type)
+		{
+			CCVector3 coord = CCVector3(data_str[0].toFloat(), data_str[1].toFloat(), data_str[2].toFloat());
+			ccSphere* point = new ccSphere(name);
+			point->setRadius(PointCoordinateType(0.01));
+			point->setDrawingPrecision(std::uint8_t(24));
+			point->setColor(ccColor::darkBlue);
+			point->showColors(true);
+			point->translateGL(coord);
+			m_app->addToDB(point,true);
+		}
+		else if (type == plane_type)
+		{
+			continue;
+		}
+		else if (type == point_uncert_type)
+		{
+			continue;
+		}
+		else {
+			continue;
+		}
+
+	}
+
+	/*
+	m_app->dispToConsole("[P3KAPlugin] point: " + QString::number(x) + QString::number(y) + QString::number(z), ccMainAppInterface::STD_CONSOLE_MESSAGE);
+
+	ccSphere* point = new ccSphere("mexico");
+	point->setRadius(PointCoordinateType(0.01));
+	point->setDrawingPrecision(std::uint8_t(24));
+	point->setColor(ccColor::darkBlue);
+	point->showColors(true);
+	point->translateGL(CCVector3(x, y, z));
+	m_app->addToDB(point); */
+}
+
 void LoadP3KAPlugin::performActionLoadDialog()
 {
 	if (m_app == nullptr)
@@ -81,107 +138,15 @@ void LoadP3KAPlugin::performActionLoadDialog()
 		return;
 	}
 
-	QString path = QFileDialog::getOpenFileName(nullptr, "Load P3KA result", " ", "Files (*.txt)");
-	m_app->dispToConsole("[P3KAPlugin] Loaded: " + path, ccMainAppInterface::STD_CONSOLE_MESSAGE);
-
-	std::ifstream source;
-	source.open(path.toStdString(), std::ios_base::in);
-
-	float x, y, z;
-	for (std::string line; std::getline(source, line);)  //read stream line by line
-	{
-		std::istringstream in(line);      //make a stream for the line itself
-
-		std::string type;
-		in >> type;                  //and read the first whitespace-separated token
-
-		if (type == "point")       //and check its value
-		{
-			in >> x >> y >> z;       //now read the whitespace-separated floats
-		}
-		else if (type == "camera")
-		{
-			in >> x >> y >> z;
-		}
+	//QString path = QFileDialog::getOpenFileName(nullptr, "Load P3KA result", " ", "Files (*.json)");
+	QString path = QString::fromStdString("D:/cloudcompare/p3ka_res.json");
+	if (path.isEmpty() || path.isNull()) {
+		m_app->dispToConsole("[P3KAPlugin] Canceled loading P3KA result", ccMainAppInterface::STD_CONSOLE_MESSAGE);
+		return;
 	}
 
+	m_app->dispToConsole("[P3KAPlugin] Loaded: " + path, ccMainAppInterface::STD_CONSOLE_MESSAGE);
+	readP3KAResult(path);
 
-	m_app->dispToConsole("[P3KAPlugin] point: " + QString::number(x) + QString::number(y) + QString::number(z), ccMainAppInterface::STD_CONSOLE_MESSAGE);
-
-	ccSphere* point = new ccSphere("mexico");
-	point->setRadius(PointCoordinateType(0.01));
-	point->setDrawingPrecision(std::uint8_t(24));
-	point->setColor(ccColor::darkBlue);
-	point->showColors(true);
-	point->translateGL(CCVector3(x, y, z));
-	m_app->addToDB(point);
-
-
-
-	/*
-	QString path = QFileDialog::getOpenFileName(nullptr, "Load P3KA result"," ","Files (*.json)");
-
-	appInterface->dispToConsole("[P3KAPlugin] Loaded: " + path, ccMainAppInterface::STD_CONSOLE_MESSAGE);
-
-	QString val;
-	QFile p3ka_file;
-	p3ka_file.setFileName(path);
-	p3ka_file.open(QIODevice::ReadOnly | QIODevice::Text);
-	val = p3ka_file.readAll();
-	p3ka_file.close();
-	qWarning() << val;
-	QJsonDocument d = QJsonDocument::fromJson(val.toUtf8());
-
-	std::list<std::string> keys = d.object();
-
-	QJsonObject sett2 = d.object();
-	QJsonValue value = sett2.value(QString("appName"));
-	qWarning() << value;
-	QJsonObject item = value.toObject();
-	qWarning() << tr("QJsonObject of description: ") << item;
-
-	/* in case of string value get value and convert into string
-	qWarning() << tr("QJsonObject[appName] of description: ") << item["description"];
-	QJsonValue subobj = item["description"];
-	qWarning() << subobj.toString();
-
-	/* in case of array get array and convert into string
-	qWarning() << tr("QJsonObject[appName] of value: ") << item["imp"];
-	QJsonArray test = item["imp"].toArray();
-	qWarning() << test[1].toString();
-
-	// Show the dialog as modal
-
-	if (rulerDlg.exec() == QDialog::Accepted) {
-
-		// If the user didn't dismiss the dialog, do something with the fields
-
-		rulerLength = lineEditSegmentLength->text().toInt();
-		rulerWidth = lineEditSegmentWidth->text().toInt();
-		rulerNoOfSegments = lineEditNrSegments->text().toInt();
-
-		ccPlane* rulerContainer = new ccPlane("Ruler");
-
-		int segmentOffset;
-
-		for (int i = 0; i < rulerNoOfSegments; i++) {
-			ccGenericPrimitive* segment = new ccPlane(rulerLength / rulerNoOfSegments, rulerWidth, 0, QString("ruler segment_%1").arg(i + 1));
-			segmentOffset = i * rulerLength / rulerNoOfSegments;
-
-			if (i % 2) {
-				segment->setColor(ccColor::darkBlue);
-			}
-			else {
-				segment->setColor(ccColor::white);
-			}
-
-			segment->showColors(true);
-			segment->translateGL(CCVector3(segmentOffset, 0, 0));
-			rulerContainer->addChild(segment);
-		}
-
-		appInterface->addToDB(rulerContainer);
-
-	}*/
 }
 

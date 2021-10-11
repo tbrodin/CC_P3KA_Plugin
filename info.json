@@ -1,7 +1,7 @@
 {
 	"type" : "Standard",
 	"name" : "Load P3KA project",
-	"icon" : ":/CC/plugin/LoadP3KAPlugin/images/icon.png",
+	"icon" : ":/CC/plugin/LoadP3KAPlugin/images/icon_black.png",
 	"description": "This is a description of the marvelous P3KA plugin. It does everything.",
 	"authors" : [
 		{

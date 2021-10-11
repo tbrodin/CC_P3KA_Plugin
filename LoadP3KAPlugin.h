@@ -1,6 +1,23 @@
 #pragma once
 
 #include "ccStdPluginInterface.h"
+#include "qdialog.h"
+#include "qfiledialog.h"
+#include "qlayout.h"
+#include "qformlayout.h" 
+#include "qpushbutton.h"
+#include "ccSphere.h"
+#include "cc2DViewportObject.h"
+#include "ccCameraSensor.h"
+#include "qlineedit.h"
+#include "qlabel.h"
+#include "qdialogbuttonbox.h"
+#include "qstring.h"
+#include "qjsondocument.h"
+
+#include <sstream>
+#include <string>
+#include <fstream>
 
 //! Example qCC plugin
 /** Replace 'ExamplePlugin' by your own plugin class name throughout and then
@@ -28,7 +45,7 @@ class LoadP3KAPlugin : public QObject, public ccStdPluginInterface
 	// Replace "Example" by your plugin name (IID should be unique - let's hope your plugin name is unique ;)
 	// The info.json file provides information about the plugin to the loading system and
 	// it is displayed in the plugin information dialog.
-	Q_PLUGIN_METADATA( IID "cccorp.cloudcompare.plugin.Example" FILE "info.json" )
+	Q_PLUGIN_METADATA( IID "cccorp.cloudcompare.plugin.LoadP3KA" FILE "info.json" )
 
 public:
 	explicit LoadP3KAPlugin( QObject *parent = nullptr );
@@ -39,6 +56,7 @@ public:
 	QList<QAction *> getActions() override;
 
 private:
+	void readP3KAResult(QString path);
 	void performActionLoadDialog();
 	//! Default action
 	/** You can add as many actions as you want in a plugin.
