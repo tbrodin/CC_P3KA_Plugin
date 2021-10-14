@@ -22,7 +22,7 @@ To se which version that is active open Cmd and run:
 If the version is incorrect you might need to add correct version to Environment variable PATH and reorder it so it becomes the prioritized qmake version.
 
  
-***Using Qt 5.15.2 and msvc2019_64 has been proved to work.***
+***Make sure to compile the plugin using the EXACT same QT-version and MSVC-version as was used for the installed CloudCompare version that you want to use the plugin with (For example by using Qt 5.9.9 and MSVC1916 for CloudCompare 2.11.3) *** (Versions used can be found by starting your installed CloudCompare and open Help->About..)
 
 
 5. Generate the CloudCompare project using cmake (for example with Cmake-gui) according to the CloudCompare projects README. If preparations are done correctly you will be able to choose to generate the Plugin project (PLUGIN_LOAD_P3KA) together with the CloudCompare project.

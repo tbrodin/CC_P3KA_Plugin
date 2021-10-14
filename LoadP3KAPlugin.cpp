@@ -138,8 +138,8 @@ void LoadP3KAPlugin::performActionLoadDialog()
 		return;
 	}
 
-	//QString path = QFileDialog::getOpenFileName(nullptr, "Load P3KA result", " ", "Files (*.json)");
-	QString path = QString::fromStdString("D:/cloudcompare/p3ka_res.json");
+	QString path = QFileDialog::getOpenFileName(nullptr, "Load P3KA result", " ", "Files (*.json)");
+	//QString path = QString::fromStdString("D:/cloudcompare/p3ka_res.json");
 	if (path.isEmpty() || path.isNull()) {
 		m_app->dispToConsole("[P3KAPlugin] Canceled loading P3KA result", ccMainAppInterface::STD_CONSOLE_MESSAGE);
 		return;
